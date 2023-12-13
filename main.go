@@ -57,11 +57,23 @@ func main() {
 			} else {
 				os.Unsetenv(args[1])
 			}
+		case "echo":
+			echoCommand(args[1:])
 		default:
 			// Execute other commands
 			executeCommand(args)
 		}
 	}
+}
+
+func echoCommand(args []string) {
+	for i, arg := range args {
+		if i > 0 {
+			fmt.Print(" ")
+		}
+		fmt.Print(arg)
+	}
+	fmt.Println()
 }
 
 func executeCommand(args []string) {
