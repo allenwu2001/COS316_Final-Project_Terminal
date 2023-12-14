@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
+	"time"
 )
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		fmt.Print("go-shell> ")
+		fmt.Print("\033[31mgo-shell> \033[0m")
 		input, err := reader.ReadString('\n')
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -58,6 +60,18 @@ func main() {
 			}
 		// case "echo":
 		// echoCommand(args[1:])
+		case "sleep":
+			// Handle 'sleep' command
+			if len(args) != 2 {
+				fmt.Println("Sleeping for " + args[1] + " seconds in background")
+			} else {
+				duration, err := strconv.Atoi(args[1])
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "Invalid duration:", err)
+					break
+				}
+				time.Sleep(time.Duration(duration) * time.Second)
+			}
 		default:
 			// Execute other commands
 			executeCommand(args)
@@ -111,6 +125,12 @@ func isFileName(s string) bool {
 }
 
 func executeCommand(args []string) {
+	var runInBg bool = false
+	if len(args) > 0 && args[len(args)-1] == "&" {
+		runInBg = true
+		args = args[:len(args)-1] // Remove the '&' from the args
+	}
+
 	// Check for input and output redirection
 	var inputFile, outputFile string
 	for i, arg := range args {
@@ -171,4 +191,25 @@ func executeCommand(args []string) {
 	if err := cmd.Run(); err != nil {
 		// Handle errors...
 	}
+
+	if runInBg {
+		runInBackground(cmd)
+	} else {
+		// Execute the command in the foreground
+		if err := cmd.Run(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+	}
+}
+
+func runInBackground(cmd *exec.Cmd) {
+	if err := cmd.Start(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+	go func() {
+		if err := cmd.Wait(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+	}()
 }
