@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 )
 
 func main() {
@@ -24,7 +23,7 @@ func main() {
 		input = strings.TrimSpace(input)
 
 		// Split the input to separate the command and the arguments
-		args := strings.Fields(input)
+		args := tokenize(input)
 
 		if len(args) == 0 {
 			continue
@@ -57,13 +56,50 @@ func main() {
 			} else {
 				os.Unsetenv(args[1])
 			}
-		case "echo":
-			echoCommand(args[1:])
+		// case "echo":
+		// echoCommand(args[1:])
 		default:
 			// Execute other commands
 			executeCommand(args)
 		}
 	}
+}
+
+// Updated tokenize function
+func tokenize(input string) []string {
+	var tokens []string
+	var currentToken strings.Builder
+	inQuotes := false
+
+	for _, char := range input {
+		switch {
+		case char == '"' && inQuotes:
+			inQuotes = false
+			tokens = append(tokens, currentToken.String())
+			currentToken.Reset()
+		case char == '"' && !inQuotes:
+			inQuotes = true
+		case (char == '>' || char == '<') && !inQuotes:
+			if currentToken.Len() > 0 {
+				tokens = append(tokens, currentToken.String())
+				currentToken.Reset()
+			}
+			tokens = append(tokens, string(char))
+		case char == ' ' && !inQuotes:
+			if currentToken.Len() > 0 {
+				tokens = append(tokens, currentToken.String())
+				currentToken.Reset()
+			}
+		default:
+			currentToken.WriteRune(char)
+		}
+	}
+
+	if currentToken.Len() > 0 {
+		tokens = append(tokens, currentToken.String())
+	}
+
+	return tokens
 }
 
 func echoCommand(args []string) {
@@ -76,34 +112,73 @@ func echoCommand(args []string) {
 	fmt.Println()
 }
 
+func isFileName(s string) bool {
+	fileInfo, err := os.Stat(s)
+	if os.IsNotExist(err) {
+		return false // File does not exist
+	}
+	return !fileInfo.IsDir() // Return true if it's not a directory
+}
+
 func executeCommand(args []string) {
-	// Background process check
-	background := false
-	if args[len(args)-1] == "&" {
-		background = true
-		args = args[:len(args)-1] // Remove "&" from arguments
+	// Check for input and output redirection
+	var inputFile, outputFile string
+	for i, arg := range args {
+		if arg == "<" {
+			if i+1 < len(args) {
+				inputFile = args[i+1]
+				if !isFileName(inputFile) {
+					fmt.Println("File does not exist")
+					return
+				}
+				args = append(args[:i], args[i+2:]...)
+				break
+			}
+		} else if arg == ">" {
+			if i+1 < len(args) {
+				outputFile = args[i+1]
+				if !(strings.HasSuffix(outputFile, ".txt") || strings.HasSuffix(outputFile, ".md")) {
+					fmt.Println("Invalid file type")
+					return
+				}
+				args = append(args[:i], args[i+2:]...)
+				break
+			}
+		}
 	}
 
 	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	cmd.Stdin = os.Stdin
 
-	if background {
-		err := cmd.Start()
+	// Set up input redirection
+	if inputFile != "" {
+		inFile, err := os.Open(inputFile)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
+			return
 		}
+		defer inFile.Close()
+		cmd.Stdin = inFile
 	} else {
-		err := cmd.Run()
+		cmd.Stdin = os.Stdin
+	}
+
+	// Set up output redirection
+	if outputFile != "" {
+		outFile, err := os.Create(outputFile)
 		if err != nil {
-			// If it's a system call error, exit with the system call's exit status
-			if exitError, ok := err.(*exec.ExitError); ok {
-				if ws, ok := exitError.Sys().(syscall.WaitStatus); ok {
-					os.Exit(ws.ExitStatus())
-				}
-			}
 			fmt.Fprintln(os.Stderr, err)
+			return
 		}
+		defer outFile.Close()
+		cmd.Stdout = outFile
+	} else {
+		cmd.Stdout = os.Stdout
+	}
+
+	cmd.Stderr = os.Stderr
+
+	// Execute the command
+	if err := cmd.Run(); err != nil {
+		// Handle errors...
 	}
 }
