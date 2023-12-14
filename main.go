@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+var commands = []string{"cd", "ls", "echo", "exit", "setenv", "unsetenv"}
+
 func main() {
 	reader := bufio.NewReader(os.Stdin)
 
@@ -23,6 +25,11 @@ func main() {
 
 		input = strings.TrimSuffix(input, "\n")
 		input = strings.TrimSpace(input)
+
+		if input == "\t" {
+			displayAutocompleteOptions()
+			continue
+		}
 
 		// Split the input to separate the command and the arguments
 		args := tokenize(input)
@@ -47,14 +54,14 @@ func main() {
 		case "setenv":
 			// Set Environment Variable
 			if len(args) != 3 {
-				fmt.Println("expected usage: setenv KEY VALUE")
+				fmt.Println("Invalid input, setenv KEY VALUE")
 			} else {
 				os.Setenv(args[1], args[2])
 			}
 		case "unsetenv":
 			// Unset Environment Variable
 			if len(args) != 2 {
-				fmt.Println("expected usage: unsetenv KEY")
+				fmt.Println("Invalid input, unsetenv KEY")
 			} else {
 				os.Unsetenv(args[1])
 			}
@@ -76,6 +83,13 @@ func main() {
 			// Execute other commands
 			executeCommand(args)
 		}
+	}
+}
+
+func displayAutocompleteOptions() {
+	fmt.Println("Available commands:")
+	for _, command := range commands {
+		fmt.Println(" -", command)
 	}
 }
 
@@ -186,11 +200,6 @@ func executeCommand(args []string) {
 	}
 
 	cmd.Stderr = os.Stderr
-
-	// Execute the command
-	if err := cmd.Run(); err != nil {
-		// Handle errors...
-	}
 
 	if runInBg {
 		runInBackground(cmd)
