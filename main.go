@@ -1,97 +1,171 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/chzyer/readline"
 )
 
-var commands = []string{"cd", "ls", "echo", "exit", "setenv", "unsetenv"}
-
 func main() {
-	reader := bufio.NewReader(os.Stdin)
+	completer := readline.NewPrefixCompleter(
+			readline.PcItem("exit"),
+			readline.PcItem("cd"),
+			readline.PcItem("setenv"),
+			readline.PcItem("unsetenv"),
+			readline.PcItem("sleep"),
+			// Add more commands or nested completers here
+	)
+
+	rl, err := readline.NewEx(&readline.Config{
+			Prompt:          "\033[31mgo-shell> \033[0m",
+			AutoComplete:    completer,
+			HistoryFile:     "/tmp/readline_tmp",
+			InterruptPrompt: "^C",
+			EOFPrompt:       "exit",
+	})
+
+	if err != nil {
+			panic(err)
+	}
+	defer rl.Close()
 
 	for {
-		fmt.Print("\033[31mgo-shell> \033[0m")
-		input, err := reader.ReadString('\n')
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			continue
-		}
-
-		input = strings.TrimSuffix(input, "\n")
-		input = strings.TrimSpace(input)
-
-		if input == "\t" {
-			displayAutocompleteOptions()
-			continue
-		}
-
-		// Split the input to separate the command and the arguments
-		args := tokenize(input)
-
-		if len(args) == 0 {
-			continue
-		}
-
-		switch args[0] {
-		case "exit":
-			os.Exit(0)
-		case "cd":
-			// Change Directory
-			if len(args) < 2 {
-				fmt.Println("expected path")
-			} else {
-				err := os.Chdir(args[1])
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
-				}
-			}
-		case "setenv":
-			// Set Environment Variable
-			if len(args) != 3 {
-				fmt.Println("Invalid input, setenv KEY VALUE")
-			} else {
-				os.Setenv(args[1], args[2])
-			}
-		case "unsetenv":
-			// Unset Environment Variable
-			if len(args) != 2 {
-				fmt.Println("Invalid input, unsetenv KEY")
-			} else {
-				os.Unsetenv(args[1])
-			}
-		// case "echo":
-		// echoCommand(args[1:])
-		case "sleep":
-			// Handle 'sleep' command
-			if len(args) != 2 {
-				fmt.Println("Sleeping for " + args[1] + " seconds in background")
-			} else {
-				duration, err := strconv.Atoi(args[1])
-				if err != nil {
-					fmt.Fprintln(os.Stderr, "Invalid duration:", err)
+			line, err := rl.Readline()
+			if err != nil { // io.EOF, readline.ErrInterrupt
 					break
-				}
-				time.Sleep(time.Duration(duration) * time.Second)
 			}
-		default:
-			// Execute other commands
-			executeCommand(args)
-		}
+
+			input := strings.TrimSpace(line)
+			args := tokenize(input)
+
+			if len(args) == 0 {
+					continue
+			}
+
+			// Switch cases as in your original code
+			// ...
+
+			switch args[0] {
+			case "exit":
+				os.Exit(0)
+			case "cd":
+				// Change Directory
+				if len(args) < 2 {
+					fmt.Println("expected path")
+				} else {
+					err := os.Chdir(args[1])
+					if err != nil {
+						fmt.Fprintln(os.Stderr, err)
+					}
+				}
+			case "setenv":
+				// Set Environment Variable
+				if len(args) != 3 {
+					fmt.Println("Invalid input, setenv KEY VALUE")
+				} else {
+					os.Setenv(args[1], args[2])
+				}
+			case "unsetenv":
+				// Unset Environment Variable
+				if len(args) != 2 {
+					fmt.Println("Invalid input, unsetenv KEY")
+				} else {
+					os.Unsetenv(args[1])
+				}
+			// case "echo":
+			// echoCommand(args[1:])
+			case "sleep":
+				// Handle 'sleep' command
+				if len(args) != 2 {
+					fmt.Println("Sleeping for " + args[1] + " seconds in background")
+				} else {
+					duration, err := strconv.Atoi(args[1])
+					if err != nil {
+						fmt.Fprintln(os.Stderr, "Invalid duration:", err)
+						break
+					}
+					time.Sleep(time.Duration(duration) * time.Second)
+				}
+			default:
+				// Execute other commands
+				executeCommand(args)
+			}
 	}
 }
 
-func displayAutocompleteOptions() {
-	fmt.Println("Available commands:")
-	for _, command := range commands {
-		fmt.Println(" -", command)
-	}
-}
+// func main() {
+// 	reader := bufio.NewReader(os.Stdin)
+
+// 	for {
+// 		fmt.Print("\033[31mgo-shell> \033[0m")
+// 		input, err := reader.ReadString('\n')
+// 		if err != nil {
+// 			fmt.Fprintln(os.Stderr, err)
+// 			continue
+// 		}
+
+// 		input = strings.TrimSuffix(input, "\n")
+// 		input = strings.TrimSpace(input)
+
+// 		// Split the input to separate the command and the arguments
+// 		args := tokenize(input)
+
+// 		if len(args) == 0 {
+// 			continue
+// 		}
+
+// 		switch args[0] {
+// 		case "exit":
+// 			os.Exit(0)
+// 		case "cd":
+// 			// Change Directory
+// 			if len(args) < 2 {
+// 				fmt.Println("expected path")
+// 			} else {
+// 				err := os.Chdir(args[1])
+// 				if err != nil {
+// 					fmt.Fprintln(os.Stderr, err)
+// 				}
+// 			}
+// 		case "setenv":
+// 			// Set Environment Variable
+// 			if len(args) != 3 {
+// 				fmt.Println("Invalid input, setenv KEY VALUE")
+// 			} else {
+// 				os.Setenv(args[1], args[2])
+// 			}
+// 		case "unsetenv":
+// 			// Unset Environment Variable
+// 			if len(args) != 2 {
+// 				fmt.Println("Invalid input, unsetenv KEY")
+// 			} else {
+// 				os.Unsetenv(args[1])
+// 			}
+// 		// case "echo":
+// 		// echoCommand(args[1:])
+// 		case "sleep":
+// 			// Handle 'sleep' command
+// 			if len(args) != 2 {
+// 				fmt.Println("Sleeping for " + args[1] + " seconds in background")
+// 			} else {
+// 				duration, err := strconv.Atoi(args[1])
+// 				if err != nil {
+// 					fmt.Fprintln(os.Stderr, "Invalid duration:", err)
+// 					break
+// 				}
+// 				time.Sleep(time.Duration(duration) * time.Second)
+// 			}
+// 		default:
+// 			// Execute other commands
+// 			executeCommand(args)
+// 		}
+// 	}
+// }
 
 // Updated tokenize function
 func tokenize(input string) []string {
