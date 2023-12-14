@@ -102,16 +102,6 @@ func tokenize(input string) []string {
 	return tokens
 }
 
-func echoCommand(args []string) {
-	for i, arg := range args {
-		if i > 0 {
-			fmt.Print(" ")
-		}
-		fmt.Print(arg)
-	}
-	fmt.Println()
-}
-
 func isFileName(s string) bool {
 	fileInfo, err := os.Stat(s)
 	if os.IsNotExist(err) {
