@@ -18,13 +18,11 @@ func main() {
 		readline.PcItem("setenv"),
 		readline.PcItem("unsetenv"),
 		readline.PcItem("sleep"),
-		// Add more commands or nested completers here
 	)
 
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:          "\033[31mgo-shell> \033[0m",
 		AutoComplete:    completer,
-		HistoryFile:     "/tmp/readline_tmp",
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
 	})
@@ -36,7 +34,7 @@ func main() {
 
 	for {
 		line, err := rl.Readline()
-		if err != nil { // io.EOF, readline.ErrInterrupt
+		if err != nil {
 			break
 		}
 
@@ -51,9 +49,8 @@ func main() {
 		case "exit":
 			os.Exit(0)
 		case "cd":
-			// Change Directory
 			if len(args) < 2 {
-				fmt.Println("expected path")
+				fmt.Println("need path")
 			} else {
 				err := os.Chdir(args[1])
 				if err != nil {
@@ -61,23 +58,18 @@ func main() {
 				}
 			}
 		case "setenv":
-			// Set Environment Variable
 			if len(args) != 3 {
-				fmt.Println("Invalid input, setenv KEY VALUE")
+				fmt.Println("Invalid input for setenv")
 			} else {
 				os.Setenv(args[1], args[2])
 			}
 		case "unsetenv":
-			// Unset Environment Variable
 			if len(args) != 2 {
-				fmt.Println("Invalid input, unsetenv KEY")
+				fmt.Println("Invalid input for unsetenv")
 			} else {
 				os.Unsetenv(args[1])
 			}
-		// case "echo":
-		// echoCommand(args[1:])
 		case "sleep":
-			// Handle 'sleep' command
 			if len(args) != 2 {
 				fmt.Println("Sleeping for " + args[1] + " seconds in background")
 			} else {
@@ -89,82 +81,12 @@ func main() {
 				time.Sleep(time.Duration(duration) * time.Second)
 			}
 		default:
-			// Execute other commands
 			executeCommand(args)
 		}
 	}
 }
 
-// func main() {
-// 	reader := bufio.NewReader(os.Stdin)
-
-// 	for {
-// 		fmt.Print("\033[31mgo-shell> \033[0m")
-// 		input, err := reader.ReadString('\n')
-// 		if err != nil {
-// 			fmt.Fprintln(os.Stderr, err)
-// 			continue
-// 		}
-
-// 		input = strings.TrimSuffix(input, "\n")
-// 		input = strings.TrimSpace(input)
-
-// 		// Split the input to separate the command and the arguments
-// 		args := tokenize(input)
-
-// 		if len(args) == 0 {
-// 			continue
-// 		}
-
-// 		switch args[0] {
-// 		case "exit":
-// 			os.Exit(0)
-// 		case "cd":
-// 			// Change Directory
-// 			if len(args) < 2 {
-// 				fmt.Println("expected path")
-// 			} else {
-// 				err := os.Chdir(args[1])
-// 				if err != nil {
-// 					fmt.Fprintln(os.Stderr, err)
-// 				}
-// 			}
-// 		case "setenv":
-// 			// Set Environment Variable
-// 			if len(args) != 3 {
-// 				fmt.Println("Invalid input, setenv KEY VALUE")
-// 			} else {
-// 				os.Setenv(args[1], args[2])
-// 			}
-// 		case "unsetenv":
-// 			// Unset Environment Variable
-// 			if len(args) != 2 {
-// 				fmt.Println("Invalid input, unsetenv KEY")
-// 			} else {
-// 				os.Unsetenv(args[1])
-// 			}
-// 		// case "echo":
-// 		// echoCommand(args[1:])
-// 		case "sleep":
-// 			// Handle 'sleep' command
-// 			if len(args) != 2 {
-// 				fmt.Println("Sleeping for " + args[1] + " seconds in background")
-// 			} else {
-// 				duration, err := strconv.Atoi(args[1])
-// 				if err != nil {
-// 					fmt.Fprintln(os.Stderr, "Invalid duration:", err)
-// 					break
-// 				}
-// 				time.Sleep(time.Duration(duration) * time.Second)
-// 			}
-// 		default:
-// 			// Execute other commands
-// 			executeCommand(args)
-// 		}
-// 	}
-// }
-
-// Updated tokenize function
+// Tokenize the input
 func tokenize(input string) []string {
 	var tokens []string
 	var currentToken strings.Builder
@@ -204,19 +126,18 @@ func tokenize(input string) []string {
 func isFileName(s string) bool {
 	fileInfo, err := os.Stat(s)
 	if os.IsNotExist(err) {
-		return false // File does not exist
+		return false
 	}
-	return !fileInfo.IsDir() // Return true if it's not a directory
+	return !fileInfo.IsDir()
 }
 
 func executeCommand(args []string) {
-	var runInBg bool = false
+	var background bool = false
 	if len(args) > 0 && args[len(args)-1] == "&" {
-		runInBg = true
-		args = args[:len(args)-1] // Remove the '&' from the args
+		background = true
+		args = args[:len(args)-1]
 	}
 
-	// Check for input and output redirection
 	var inputFile, outputFile string
 	for i, arg := range args {
 		if arg == "<" {
@@ -244,7 +165,6 @@ func executeCommand(args []string) {
 
 	cmd := exec.Command(args[0], args[1:]...)
 
-	// Set up input redirection
 	if inputFile != "" {
 		inFile, err := os.Open(inputFile)
 		if err != nil {
@@ -257,7 +177,6 @@ func executeCommand(args []string) {
 		cmd.Stdin = os.Stdin
 	}
 
-	// Set up output redirection
 	if outputFile != "" {
 		outFile, err := os.Create(outputFile)
 		if err != nil {
@@ -272,10 +191,9 @@ func executeCommand(args []string) {
 
 	cmd.Stderr = os.Stderr
 
-	if runInBg {
+	if background {
 		runInBackground(cmd)
 	} else {
-		// Execute the command in the foreground
 		if err := cmd.Run(); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
