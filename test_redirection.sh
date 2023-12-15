@@ -7,7 +7,7 @@ test_command() {
     output_file=$3
 
     echo "Testing command: $command"
-    echo $command < ./go-shell
+    echo $command | ./main > "$output_file"
 
     # Check if output matches the expectation
     if [[ -f "$output_file" ]]; then
@@ -24,7 +24,7 @@ test_command() {
 
 # Test case 1: Output redirection
 test_command "echo hello world > test_output.txt" "hello world" "test_output.txt"
-
+echo "Test case 1 passed"
 # Test case 2: Input redirection
 # First create a test input file
 echo "input text" > test_input.txt

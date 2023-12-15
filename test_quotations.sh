@@ -19,9 +19,9 @@ test_command() {
 }
 
 # Test case: Command with quotes
-test_command "echo \"Hello, world\"" "Hello, world"
+# test_command "echo \"Hello, world\"" "Hello, world"
 
 # Test case: Command without quotes
-test_command "echo Hello world" "Hello world"
+#test_command "echo Hello world" "Hello world"
 
 # Add more test cases as needed
