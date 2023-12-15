@@ -22,15 +22,20 @@ test_command() {
     fi
 }
 
-# Test case 1: Output redirection
+# Case 1
 test_command "echo hello world > test_output.txt" "hello world" "test_output.txt"
 echo "Test case 1 passed"
-# Test case 2: Input redirection
-# First create a test input file
+# Case 2
 echo "input text" > test_input.txt
 test_command "cat < test_input.txt" "input text" "test_output.txt"
+echo "Test case 2 passed"
+# Case 3
+echo "input             text" > test_input.txt
+test_command "cat < test_input.txt" "input             text" "test_output.txt"
 
-# Clean up test files
+echo input          text > test_input.txt
+test_command "cat < test_input.txt" "input text" "test_output.txt"
+
+echo "Test case 3 passed"
+
 rm test_input.txt test_output.txt
-
-# Add more test cases as needed
