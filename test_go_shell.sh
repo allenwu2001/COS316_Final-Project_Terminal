@@ -16,7 +16,7 @@ test_output_redirection() {
     echo "$test_command" > "$temp_command_file"
     
     # Execute your Go shell with the temporary file as input
-    cat "$temp_command_file" < $GO_SHELL_EXECUTABLE
+    cat "$temp_command_file" | $GO_SHELL_EXECUTABLE
 
     # Check if the output file was created and contains expected output
     if [[ -f "$output_file" ]]; then

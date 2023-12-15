@@ -7,7 +7,7 @@ test_command() {
     output_file=$3
 
     echo "Testing command: $command"
-    echo $command | ./go-shell
+    echo $command < ./go-shell
 
     # Check if output matches the expectation
     if [[ -f "$output_file" ]]; then
