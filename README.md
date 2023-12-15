@@ -14,10 +14,14 @@ the autocomplete.
 
 To run either of the scripts test_background.sh or test_redirection.sh,
 type the commands:
-```chmod +x test_background.sh
-./test_background.sh```
+```
+chmod +x test_background.sh
+./test_background.sh
+```
 
 or 
 
-```chmod +x test_redirection.sh```
-```./test_redirection.sh```
+```
+chmod +x test_redirection.sh
+./test_redirection.sh
+```
