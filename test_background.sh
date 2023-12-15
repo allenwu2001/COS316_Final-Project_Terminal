@@ -5,6 +5,7 @@ go_shell_executable="./go-shell" # Replace with the actual path to your Go shell
 
 # Command to test background execution
 background_command="sleep 5 &"
+#background_command="sleep 5 "
 test_command="echo Next command after sleep"
 
 # Start the Go shell
